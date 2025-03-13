@@ -32,7 +32,7 @@ priority = "optional"
 
 [package.metadata.generate-rpm]
 assets = [
-    ["target/release/clipboard-monitor", "/usr/local/bin/clipboard-monitor", "0755"],
-    ["assets/icon.png", "/usr/share/icons/hicolor/256x256/apps/clipboard-monitor.png", "0644"],
-    ["assets/clipboard-monitor.desktop", "/usr/share/applications/clipboard-monitor.desktop", "0644"]
+    { source = "target/release/clipboard-monitor", dest = "/usr/local/bin/clipboard-monitor", mode = "755" },
+    { source = "assets/icon.png", dest = "/usr/share/icons/hicolor/256x256/apps/clipboard-monitor.png", mode = "644" },
+    { source = "assets/clipboard-monitor.desktop", dest = "/usr/share/applications/clipboard-monitor.desktop", mode = "644" }
 ]

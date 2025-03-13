@@ -32,10 +32,14 @@ impl ClipboardApp {
         }
     }
 
-    /// Trunca los textos largos para que se muestren de manera ordenada en la UI
+    /// Trunca los textos largos asegurándose de no cortar caracteres UTF-8
     fn truncate_text(text: &str, max_length: usize) -> String {
+        let mut end = max_length;
+        while !text.is_char_boundary(end) {
+            end -= 1;
+        }
         if text.len() > max_length {
-            format!("{}...", &text[..max_length])
+            format!("{}...", &text[..end])
         } else {
             text.to_string()
         }
