@@ -5,55 +5,44 @@ on:
     tags:
       - 'v*.*.*'
 
-permissions:
-  contents: write
-  packages: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up Rust
         uses: actions/setup-rust@v1
         with:
           rust-version: stable
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
+
       - name: Build
         run: cargo build --release
 
       - name: Package Debian
         run: |
-          # Comandos para empaquetar en formato .deb
-          mkdir -p target/debian
-          # Suponiendo que tienes un script o comando para generar el paquete .deb
-          ./scripts/package_deb.sh
+          mkdir -p artifacts/debian
+          # Suponiendo que usas cargo-deb para crear paquetes .deb
+          cargo install cargo-deb
+          cargo deb --output artifacts/debian/
 
       - name: Package RPM
         run: |
-          # Comandos para empaquetar en formato .rpm
-          mkdir -p target/generate-rpm
-          # Suponiendo que tienes un script o comando para generar el paquete .rpm
-          ./scripts/package_rpm.sh
-
-      - name: Verify built packages
-        run: |
-          echo "Verifying Debian packages..."
-          ls -lh target/debian/*.deb || { echo "No Debian packages found."; exit 1; }
-          echo "Verifying RPM packages..."
-          ls -lh target/generate-rpm/*.rpm || { echo "No RPM packages found."; exit 1; }
+          mkdir -p artifacts/rpm
+          # Suponiendo que usas cargo-rpm para crear paquetes .rpm
+          cargo install cargo-rpm
+          cargo rpm build --output artifacts/rpm/
 
       - name: Upload built packages
         uses: actions/upload-artifact@v4
         with:
           name: built-packages
-          path: |
-            target/debian/*.deb
-            target/generate-rpm/*.rpm
-          if-no-files-found: error
+          path: artifacts/**/*
 
   release:
     needs: build
@@ -61,7 +50,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Download built packages
         uses: actions/download-artifact@v4
@@ -69,12 +58,18 @@ jobs:
           name: built-packages
           path: artifacts
 
-      - name: List downloaded files
-        run: ls -lh artifacts/
+      - name: Validate downloaded artifacts
+        run: |
+          echo "Archivos descargados:"
+          ls -l artifacts/
+          if [ -z "$(ls -A artifacts/)" ]; then
+            echo "Error: No se encontraron artefactos descargados."
+            exit 1
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*
+          files: artifacts/**
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
