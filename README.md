@@ -24,6 +24,16 @@ cargo-generate-rpm = "0.10.0" # Para generar el paquete .rpm
 
 ## 🚀 Instalación
 
+### Desde código fuente
+1. **Clona el repositorio**
+   ```sh
+   git clone https://github.com/KDONJS/ClipboardMonitor.git
+   cd clipboard-monitor
+   ```
+2. **Compila y ejecuta**
+   ```sh
+   cargo run
+   ```
 
 ### Instalación como paquete `.deb` (Ubuntu/Debian)
 ```sh
