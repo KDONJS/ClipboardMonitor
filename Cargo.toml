@@ -34,6 +34,5 @@ priority = "optional"
 assets = [
     ["target/release/clipboard-monitor", "/usr/local/bin/clipboard-monitor", "0755"],
     ["assets/icon.png", "/usr/share/icons/hicolor/256x256/apps/clipboard-monitor.png", "0644"],
-    ["assets/icon.png", "/usr/share/pixmaps/clipboard-monitor.png", "0644"],
     ["assets/clipboard-monitor.desktop", "/usr/share/applications/clipboard-monitor.desktop", "0644"]
 ]
