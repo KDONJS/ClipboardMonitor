@@ -1,6 +1,10 @@
+use std::sync::Arc;
 use std::time;
 use arboard::Clipboard;
 use eframe::{egui, NativeOptions};
+use egui::IconData;
+use image::io::Reader as ImageReader;
+use std::io::Cursor;
 
 /// Estructura principal de la aplicación del portapapeles
 struct ClipboardApp {
@@ -75,10 +79,36 @@ impl eframe::App for ClipboardApp {
     }
 }
 
+/// Carga un ícono desde un archivo PNG en memoria
+fn load_icon() -> Option<Arc<IconData>> {
+    let icon_bytes = include_bytes!("../assets/icon.png");
+    let image = ImageReader::new(Cursor::new(icon_bytes))
+        .with_guessed_format()
+        .ok()?
+        .decode()
+        .ok()?
+        .into_rgba8();
+
+    let (width, height) = image.dimensions();
+    let rgba = image.into_raw();
+
+    Some(Arc::new(IconData { rgba, width, height }))
+}
+
 fn main() -> Result<(), eframe::Error> {
+    let icon = load_icon();
+
+    let viewport_builder = if let Some(icon_data) = icon {
+        egui::ViewportBuilder::default().with_icon(icon_data)
+    } else {
+        egui::ViewportBuilder::default()
+    };
+
     let options = NativeOptions {
+        viewport: viewport_builder,
         ..Default::default()
     };
+
     eframe::run_native(
         "📋 Clipboard Monitor", 
         options, 

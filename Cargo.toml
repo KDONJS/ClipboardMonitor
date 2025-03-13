@@ -1,25 +1,39 @@
 [package]
 name = "clipboard-monitor"
 version = "1.0.0"
-edition = "2024"
+edition = "2021"
 description = "Monitor de portapapeles con interfaz gráfica"
 license = "MIT"
+authors = ["Yorlin Quispe Ygnacio <qyyorlin51@gmail.com>"]
+homepage = "https://github.com/tu-repositorio"
+repository = "https://github.com/tu-repositorio"
+readme = "README.md"
+categories = ["utility", "gui"]
+keywords = ["clipboard", "monitor", "GUI"]
 
 [dependencies]
 eframe = "0.26"
 egui = "0.26"
 arboard = "3.3"
+image = "0.24"
 
 [package.metadata.deb]
 assets = [
-    ["assets/icon.png", "/usr/share/icons/hicolor/256x256/apps/clipboard-monitor.png", "0644"]
+    ["target/release/clipboard-monitor", "/usr/local/bin/clipboard-monitor", "0755"],
+    ["assets/icon.png", "/usr/share/icons/hicolor/256x256/apps/clipboard-monitor.png", "0644"],
+    ["assets/icon.png", "/usr/share/pixmaps/clipboard-monitor.png", "0644"],
+    ["assets/clipboard-monitor.desktop", "/usr/share/applications/clipboard-monitor.desktop", "0644"]
 ]
-maintainer = "Yorlin Quispe Ygnacio qyyorlin51@gmail.com"
+maintainer = "Yorlin Quispe Ygnacio <qyyorlin51@gmail.com>"
+copyright = "2024, Yorlin Quispe Ygnacio"
 license-file = "LICENSE"
 section = "utils"
 priority = "optional"
 
-[package.metadata.rpm]
+[package.metadata.generate-rpm]
 assets = [
-    ["assets/icon.png", "/usr/share/icons/hicolor/256x256/apps/clipboard-monitor.png", "0644"]
+    ["target/release/clipboard-monitor", "/usr/local/bin/clipboard-monitor", "0755"],
+    ["assets/icon.png", "/usr/share/icons/hicolor/256x256/apps/clipboard-monitor.png", "0644"],
+    ["assets/icon.png", "/usr/share/pixmaps/clipboard-monitor.png", "0644"],
+    ["assets/clipboard-monitor.desktop", "/usr/share/applications/clipboard-monitor.desktop", "0644"]
 ]
