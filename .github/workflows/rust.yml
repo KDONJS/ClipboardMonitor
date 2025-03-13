@@ -45,11 +45,11 @@ jobs:
           target/debian/*.deb
           target/generate-rpm/*.rpm
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
+release:
+  needs: build
+  runs-on: ubuntu-latest
 
-    steps:
+  steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -58,6 +58,18 @@ jobs:
       with:
         name: built-packages
         path: artifacts
+
+    - name: List contents of artifacts directory
+      run: ls -la artifacts/
+
+    - name: Extract artifacts if compressed
+      run: |
+        if [ -f artifacts/built-packages.zip ]; then
+          unzip artifacts/built-packages.zip -d artifacts/
+        fi
+
+    - name: Verify files after extraction
+      run: ls -la artifacts/
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
