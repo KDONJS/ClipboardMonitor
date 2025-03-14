@@ -1,14 +1,17 @@
 use std::sync::{Arc, Mutex};
-use std::thread;
+use std::{fs, thread, env};
 use std::time::Duration;
-use std::env;
+use std::fs::File;
+use std::io::{Cursor, Write, Read};
 use arboard::Clipboard;
 use daemonize::Daemonize;
 use eframe::{egui, NativeOptions};
 use egui::IconData;
 use image::io::Reader as ImageReader;
-use std::fs::File;
-use std::io::Cursor;
+use serde_json;
+
+/// Ruta donde se guarda el historial del portapapeles
+const HISTORY_FILE: &str = "/tmp/clipboard_history.json";
 
 /// Estructura principal de la aplicación del portapapeles
 struct ClipboardApp {
@@ -16,29 +19,31 @@ struct ClipboardApp {
 }
 
 impl ClipboardApp {
-    /// Crea una nueva instancia de la aplicación con un historial vacío
+    /// Crea una nueva instancia de la aplicación con un historial vacío o cargado desde un archivo
     fn new() -> Self {
-        let history = Arc::new(Mutex::new(Vec::new()));
-        let history_clone = Arc::clone(&history);
-
-        // Iniciar un hilo separado para monitorear el portapapeles constantemente
-        thread::spawn(move || {
-            let mut clipboard = Clipboard::new().unwrap();
-            loop {
-                if let Ok(content) = clipboard.get_text() {
-                    let mut history = history_clone.lock().unwrap();
-                    if history.first() != Some(&content) {
-                        history.insert(0, content);
-                        if history.len() > 10 {
-                            history.pop(); // Mantiene solo los últimos 10 elementos
-                        }
-                    }
-                }
-                thread::sleep(Duration::from_secs(1)); // Revisa cada segundo
-            }
-        });
+        let history = Arc::new(Mutex::new(Self::load_history()));
 
         Self { history }
+    }
+
+    /// Carga el historial desde un archivo JSON
+    fn load_history() -> Vec<String> {
+        if let Ok(mut file) = File::open(HISTORY_FILE) {
+            let mut contents = String::new();
+            if file.read_to_string(&mut contents).is_ok() {
+                if let Ok(history) = serde_json::from_str::<Vec<String>>(&contents) {
+                    return history;
+                }
+            }
+        }
+        Vec::new()
+    }
+
+    /// Guarda el historial en un archivo JSON
+    fn save_history(history: &Vec<String>) {
+        if let Ok(mut file) = File::create(HISTORY_FILE) {
+            let _ = file.write_all(serde_json::to_string(history).unwrap().as_bytes());
+        }
     }
 
     /// Trunca los textos largos asegurándose de no cortar caracteres UTF-8
@@ -108,39 +113,32 @@ fn load_icon() -> Option<Arc<IconData>> {
     Some(Arc::new(IconData { rgba, width, height }))
 }
 
-/// Ejecuta el proceso en segundo plano como un daemon
+/// Ejecuta el proceso en segundo plano como un daemon y guarda datos en un archivo
 fn run_daemon() {
     let stdout = File::create("/tmp/clipboard-monitor.log").unwrap();
     let stderr = File::create("/tmp/clipboard-monitor.err").unwrap();
 
     let daemonize = Daemonize::new()
-        .stdout(stdout) 
-        .stderr(stderr) 
-        .pid_file("/tmp/clipboard-monitor.pid"); 
+        .stdout(stdout)
+        .stderr(stderr)
+        .pid_file("/tmp/clipboard-monitor.pid");
 
     match daemonize.start() {
         Ok(_) => {
-            let history = Arc::new(Mutex::new(Vec::new()));
-            let history_clone = Arc::clone(&history);
-
-            thread::spawn(move || {
-                let mut clipboard = Clipboard::new().unwrap();
-                loop {
-                    if let Ok(content) = clipboard.get_text() {
-                        let mut history = history_clone.lock().unwrap();
-                        if history.first() != Some(&content) {
-                            history.insert(0, content);
-                            if history.len() > 10 {
-                                history.pop();
-                            }
-                        }
-                    }
-                    thread::sleep(Duration::from_secs(1));
-                }
-            });
+            let mut clipboard = Clipboard::new().unwrap();
+            let mut history = ClipboardApp::load_history();
 
             loop {
-                thread::sleep(Duration::from_secs(60));
+                if let Ok(content) = clipboard.get_text() {
+                    if history.first() != Some(&content) {
+                        history.insert(0, content);
+                        if history.len() > 10 {
+                            history.pop();
+                        }
+                        ClipboardApp::save_history(&history);
+                    }
+                }
+                thread::sleep(Duration::from_secs(1));
             }
         }
         Err(e) => eprintln!("Error al iniciar el daemon: {}", e),
