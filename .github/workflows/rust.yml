@@ -85,11 +85,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           for file in artifacts/debian/*.deb; do
-            package_name="clipboard-monitor"
-            package_version=$(dpkg-deb --showformat='${Version}' --show "$file")
+            package_name="clipboardmonitor"  # Sin mayúsculas ni guiones
+            package_version=$(dpkg-deb --showformat='${Version}' --show "$file" | tr '-' '_')  # Sustituye "-" por "_"
             
-            echo "Preparando paquete $file para ghcr.io/${{ github.actor }}/$package_name:$package_version"
-
+            echo "Preparando paquete $file para ghcr.io/kdonjs/$package_name:$package_version"
+          
             # Crear una imagen de contenedor temporal
             mkdir -p temp_package
             cp "$file" temp_package/
@@ -97,7 +97,7 @@ jobs:
             echo "FROM scratch" > Dockerfile
             echo "COPY . /" >> Dockerfile
             
-            image_name="ghcr.io/${{ github.actor }}/$package_name:$package_version"
+            image_name="ghcr.io/kdonjs/$package_name:$package_version"
 
             docker build -t "$image_name" .
             docker push "$image_name"
@@ -111,10 +111,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           for file in artifacts/generate-rpm/*.rpm; do
-            package_name="clipboard-monitor"
-            package_version=$(rpm -qp --queryformat '%{VERSION}-%{RELEASE}' "$file")
+            package_name="clipboardmonitor"  # Sin mayúsculas ni guiones
+            package_version=$(rpm -qp --queryformat '%{VERSION}-%{RELEASE}' "$file" | tr '-' '_')  # Sustituye "-" por "_"
             
-            echo "Preparando paquete $file para ghcr.io/${{ github.actor }}/$package_name:$package_version"
+            echo "Preparando paquete $file para ghcr.io/kdonjs/$package_name:$package_version"
 
             # Crear una imagen de contenedor temporal
             mkdir -p temp_package
@@ -123,7 +123,7 @@ jobs:
             echo "FROM scratch" > Dockerfile
             echo "COPY . /" >> Dockerfile
 
-            image_name="ghcr.io/${{ github.actor }}/$package_name:$package_version"
+            image_name="ghcr.io/kdonjs/$package_name:$package_version"
 
             docker build -t "$image_name" .
             docker push "$image_name"
