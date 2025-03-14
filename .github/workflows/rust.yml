@@ -81,7 +81,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          for file in artifacts/*.deb; do
+          for file in artifacts/debian/*.deb; do
             package_name=$(dpkg-deb --showformat='${Package}' --show "$file")
             package_version=$(dpkg-deb --showformat='${Version}' --show "$file")
             curl -X POST \
@@ -95,7 +95,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          for file in artifacts/*.rpm; do
+          for file in artifacts/generate-rpm/*.rpm; do
             package_name=$(rpm -qp --queryformat '%{NAME}' "$file")
             package_version=$(rpm -qp --queryformat '%{VERSION}-%{RELEASE}' "$file")
             curl -X POST \
