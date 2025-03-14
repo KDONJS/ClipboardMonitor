@@ -2,6 +2,8 @@
 
 Clipboard Monitor es una aplicación para Linux escrita en **Rust** que monitorea el contenido copiado al portapapeles, almacenando los últimos 10 elementos y permitiendo su reutilización a través de una interfaz gráfica.
 
+![Descripción de la imagen](assets/capture.png)
+
 ### 🔧 Arquitectura del Sistema
 
 ```mermaid
