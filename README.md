@@ -6,25 +6,34 @@ Clipboard Monitor es una aplicación para Linux escrita en **Rust** que monitore
 
 ```mermaid
 graph TD;
+    A[Inicio] -->|¿Modo Daemon?| B{Argumento --daemon}
+    B -->|Sí| C[Ejecutar Daemon en Segundo Plano]
+    B -->|No| D[Ejecutar Interfaz de Usuario]
+
     subgraph ClipboardMonitor
-        A[Inicio] -->|¿Modo Daemon?| B{Argumento --daemon}
-        B -->|Sí| C[Ejecutar Daemon en Segundo Plano]
-        B -->|No| D[Ejecutar Interfaz de Usuario (UI)]
+        C
+        D
     end
 
     subgraph Daemon
-        C --> E[Monitorear Portapapeles cada 1s]
-        E -->|Texto Copiado| F[Guardar en /tmp/clipboard_history.json]
+        E[Monitorear Portapapeles cada 1s]
+        F[Guardar en /tmp/clipboard_history.json]
+        C --> E
+        E -->|Texto Copiado| F
     end
 
     subgraph UI
-        D --> G[Cargar historial desde /tmp/clipboard_history.json]
-        G --> H[Mostrar en Interfaz de Usuario]
-        H -->|Seleccionar Texto| I[Copiar al Portapapeles]
+        G[Cargar historial desde /tmp/clipboard_history.json]
+        H[Mostrar en Interfaz de Usuario]
+        I[Copiar al Portapapeles]
+        D --> G
+        G --> H
+        H -->|Seleccionar Texto| I
     end
 
     subgraph Sistema
-        J[Usuario Copia Texto] --> E
+        J[Usuario Copia Texto]
+        J --> E
         I --> J
     end
 ```
