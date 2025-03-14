@@ -85,15 +85,25 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           for file in artifacts/debian/*.deb; do
-            package_name=$(dpkg-deb --showformat='${Package}' --show "$file")
+            package_name="clipboard-monitor"
             package_version=$(dpkg-deb --showformat='${Version}' --show "$file")
-            echo "Subiendo $file a ghcr.io/${{ github.repository }}/$package_name:$package_version"
             
-            curl -X PUT \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \
-              -H "Content-Type: application/vnd.debian.binary-package" \
-              --data-binary @"$file" \
-              "https://ghcr.io/v2/${{ github.repository }}/$package_name/blobs/uploads/"
+            echo "Preparando paquete $file para ghcr.io/${{ github.actor }}/$package_name:$package_version"
+
+            # Crear una imagen de contenedor temporal
+            mkdir -p temp_package
+            cp "$file" temp_package/
+            cd temp_package
+            echo "FROM scratch" > Dockerfile
+            echo "COPY . /" >> Dockerfile
+            
+            image_name="ghcr.io/${{ github.actor }}/$package_name:$package_version"
+
+            docker build -t "$image_name" .
+            docker push "$image_name"
+
+            cd ..
+            rm -rf temp_package
           done
 
       - name: Publish .rpm package to GitHub Container Registry
@@ -101,13 +111,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           for file in artifacts/generate-rpm/*.rpm; do
-            package_name=$(rpm -qp --queryformat '%{NAME}' "$file")
+            package_name="clipboard-monitor"
             package_version=$(rpm -qp --queryformat '%{VERSION}-%{RELEASE}' "$file")
-            echo "Subiendo $file a ghcr.io/${{ github.repository }}/$package_name:$package_version"
-  
-            curl -X PUT \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \
-              -H "Content-Type: application/x-rpm" \
-              --data-binary @"$file" \
-              "https://ghcr.io/v2/${{ github.repository }}/$package_name/blobs/uploads/"
+            
+            echo "Preparando paquete $file para ghcr.io/${{ github.actor }}/$package_name:$package_version"
+
+            # Crear una imagen de contenedor temporal
+            mkdir -p temp_package
+            cp "$file" temp_package/
+            cd temp_package
+            echo "FROM scratch" > Dockerfile
+            echo "COPY . /" >> Dockerfile
+
+            image_name="ghcr.io/${{ github.actor }}/$package_name:$package_version"
+
+            docker build -t "$image_name" .
+            docker push "$image_name"
+
+            cd ..
+            rm -rf temp_package
           done
