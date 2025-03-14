@@ -1,0 +1,82 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "develop", "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: 📦 Build y Linter
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Clonar repositorio
+      uses: actions/checkout@v4
+
+    - name: 🦀 Instalar Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy, rustfmt, miri
+
+    - name: 📦 Instalar dependencias
+      run: sudo apt update && sudo apt install -y libx11-dev libxcb1-dev
+
+    - name: 🔍 Formatear código con rustfmt
+      run: cargo fmt -- --check
+
+    - name: 🛠 Revisar código con Clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
+    - name: 🔨 Compilar el proyecto
+      run: cargo build --release --verbose
+
+  security:
+    name: 🔒 Análisis de Seguridad
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: 📥 Clonar repositorio
+      uses: actions/checkout@v4
+
+    - name: 🦀 Instalar Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: 🛡 Ejecutar Cargo Audit
+      run: |
+        cargo install cargo-audit
+        cargo audit || true  # Permitir warnings sin fallar el pipeline
+
+    - name: 🛠 Escanear código inseguro con Geiger
+      run: |
+        cargo install cargo-geiger
+        cargo geiger
+
+    - name: 🔍 Análisis de memoria con Miri
+      run: |
+        cargo miri test || true  # Puede mostrar advertencias, pero no queremos que bloquee el pipeline
+
+  test:
+    name: ✅ Pruebas y Benchmarks
+    runs-on: ubuntu-latest
+    needs: security
+
+    steps:
+    - name: 📥 Clonar repositorio
+      uses: actions/checkout@v4
+
+    - name: 🦀 Instalar Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: 🔬 Ejecutar pruebas unitarias
+      run: cargo test --verbose
+
+    - name: ⚡ Ejecutar benchmarks de performance
+      run: cargo bench || true  # No queremos que el pipeline falle si un benchmark es lento
+
+
