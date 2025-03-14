@@ -683,9 +683,10 @@ dependencies = [
 
 [[package]]
 name = "clipboard-monitor"
-version = "1.0.0"
+version = "1.2.0"
 dependencies = [
  "arboard",
+ "daemonize",
  "eframe",
  "egui",
  "image 0.24.9",
@@ -900,6 +901,15 @@ name = "cursor-icon"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96a6ac251f4a2aca6b3f91340350eab87ae57c3f127ffeb585e92bd336717991"
+
+[[package]]
+name = "daemonize"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab8bfdaacb3c887a54d41bdf48d3af8873b3f5566469f8ba21b92057509f116e"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "derivative"

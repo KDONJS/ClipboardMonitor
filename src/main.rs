@@ -1,35 +1,44 @@
-use std::sync::Arc;
-use std::time;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+use std::env;
 use arboard::Clipboard;
+use daemonize::Daemonize;
 use eframe::{egui, NativeOptions};
 use egui::IconData;
 use image::io::Reader as ImageReader;
+use std::fs::File;
 use std::io::Cursor;
 
 /// Estructura principal de la aplicación del portapapeles
 struct ClipboardApp {
-    // Historial de textos copiados, con un máximo de 10 elementos
-    history: Vec<String>,
+    history: Arc<Mutex<Vec<String>>>,
 }
 
 impl ClipboardApp {
     /// Crea una nueva instancia de la aplicación con un historial vacío
     fn new() -> Self {
-        Self { history: Vec::new() }
-    }
+        let history = Arc::new(Mutex::new(Vec::new()));
+        let history_clone = Arc::clone(&history);
 
-    /// Verifica si hay nuevos textos copiados y los agrega al historial
-    fn update_clipboard(&mut self) {
-        let mut clipboard = Clipboard::new().unwrap();
-        if let Ok(content) = clipboard.get_text() {
-            // Solo agrega al historial si el texto es nuevo
-            if self.history.first() != Some(&content) {
-                self.history.insert(0, content);
-                if self.history.len() > 10 {
-                    self.history.pop(); // Mantiene solo los últimos 10 elementos
+        // Iniciar un hilo separado para monitorear el portapapeles constantemente
+        thread::spawn(move || {
+            let mut clipboard = Clipboard::new().unwrap();
+            loop {
+                if let Ok(content) = clipboard.get_text() {
+                    let mut history = history_clone.lock().unwrap();
+                    if history.first() != Some(&content) {
+                        history.insert(0, content);
+                        if history.len() > 10 {
+                            history.pop(); // Mantiene solo los últimos 10 elementos
+                        }
+                    }
                 }
+                thread::sleep(Duration::from_secs(1)); // Revisa cada segundo
             }
-        }
+        });
+
+        Self { history }
     }
 
     /// Trunca los textos largos asegurándose de no cortar caracteres UTF-8
@@ -46,17 +55,17 @@ impl ClipboardApp {
     }
 }
 
+/// Lógica de la UI
 impl eframe::App for ClipboardApp {
-    /// Método principal que renderiza la interfaz gráfica y gestiona la lógica de la aplicación
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.update_clipboard();
+        let history = self.history.lock().unwrap();
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("📋 Historial del Portapapeles");
             ui.separator();
             
             egui::ScrollArea::vertical().show(ui, |ui| {
-                for text in &self.history {
+                for text in history.iter() {
                     let truncated_text = ClipboardApp::truncate_text(text, 50);
                     
                     ui.allocate_ui_with_layout(
@@ -79,7 +88,7 @@ impl eframe::App for ClipboardApp {
             
             ui.label("Selecciona un texto para copiarlo");
         });
-        ctx.request_repaint_after(time::Duration::from_secs(1)); // Redibuja la UI cada segundo
+        ctx.request_repaint_after(Duration::from_secs(1)); // Redibuja la UI cada segundo
     }
 }
 
@@ -99,9 +108,55 @@ fn load_icon() -> Option<Arc<IconData>> {
     Some(Arc::new(IconData { rgba, width, height }))
 }
 
-fn main() -> Result<(), eframe::Error> {
-    let icon = load_icon();
+/// Ejecuta el proceso en segundo plano como un daemon
+fn run_daemon() {
+    let stdout = File::create("/tmp/clipboard-monitor.log").unwrap();
+    let stderr = File::create("/tmp/clipboard-monitor.err").unwrap();
 
+    let daemonize = Daemonize::new()
+        .stdout(stdout) 
+        .stderr(stderr) 
+        .pid_file("/tmp/clipboard-monitor.pid"); 
+
+    match daemonize.start() {
+        Ok(_) => {
+            let history = Arc::new(Mutex::new(Vec::new()));
+            let history_clone = Arc::clone(&history);
+
+            thread::spawn(move || {
+                let mut clipboard = Clipboard::new().unwrap();
+                loop {
+                    if let Ok(content) = clipboard.get_text() {
+                        let mut history = history_clone.lock().unwrap();
+                        if history.first() != Some(&content) {
+                            history.insert(0, content);
+                            if history.len() > 10 {
+                                history.pop();
+                            }
+                        }
+                    }
+                    thread::sleep(Duration::from_secs(1));
+                }
+            });
+
+            loop {
+                thread::sleep(Duration::from_secs(60));
+            }
+        }
+        Err(e) => eprintln!("Error al iniciar el daemon: {}", e),
+    }
+}
+
+/// Función principal que maneja tanto la UI como el daemon
+fn main() -> Result<(), eframe::Error> {
+    let args: Vec<String> = env::args().collect();
+
+    if args.contains(&"--daemon".to_string()) {
+        run_daemon();
+        return Ok(());
+    }
+
+    let icon = load_icon();
     let viewport_builder = if let Some(icon_data) = icon {
         egui::ViewportBuilder::default().with_icon(icon_data)
     } else {
