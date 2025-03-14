@@ -18,12 +18,12 @@ jobs:
     - name: 📥 Clonar repositorio
       uses: actions/checkout@v4
 
-    - name: 🦀 Instalar Rust
+    - name: 🦀 Instalar Rust Stable
       uses: dtolnay/rust-toolchain@stable
       with:
-        components: clippy, rustfmt, miri
+        components: clippy, rustfmt
 
-    - name: 📦 Instalar dependencias
+    - name: 📦 Instalar dependencias del sistema
       run: sudo apt update && sudo apt install -y libx11-dev libxcb1-dev
 
     - name: 🔍 Formatear código con rustfmt
@@ -44,7 +44,7 @@ jobs:
     - name: 📥 Clonar repositorio
       uses: actions/checkout@v4
 
-    - name: 🦀 Instalar Rust
+    - name: 🦀 Instalar Rust Stable
       uses: dtolnay/rust-toolchain@stable
 
     - name: 🛡 Ejecutar Cargo Audit
@@ -57,9 +57,22 @@ jobs:
         cargo install cargo-geiger
         cargo geiger
 
-    - name: 🔍 Análisis de memoria con Miri
-      run: |
-        cargo miri test || true  # Puede mostrar advertencias, pero no queremos que bloquee el pipeline
+  miri:
+    name: 🔍 Análisis de Memoria con Miri (Rust Nightly)
+    runs-on: ubuntu-latest
+    needs: security
+
+    steps:
+    - name: 📥 Clonar repositorio
+      uses: actions/checkout@v4
+
+    - name: 🌙 Instalar Rust Nightly con Miri
+      uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: miri
+
+    - name: 🕵️ Ejecutar Miri
+      run: cargo miri test || true  # No queremos que el pipeline falle si hay warnings
 
   test:
     name: ✅ Pruebas y Benchmarks
@@ -70,7 +83,7 @@ jobs:
     - name: 📥 Clonar repositorio
       uses: actions/checkout@v4
 
-    - name: 🦀 Instalar Rust
+    - name: 🦀 Instalar Rust Stable
       uses: dtolnay/rust-toolchain@stable
 
     - name: 🔬 Ejecutar pruebas unitarias
@@ -78,5 +91,3 @@ jobs:
 
     - name: ⚡ Ejecutar benchmarks de performance
       run: cargo bench || true  # No queremos que el pipeline falle si un benchmark es lento
-
-
