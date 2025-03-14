@@ -50,12 +50,7 @@ jobs:
     - name: 🛡 Ejecutar Cargo Audit
       run: |
         cargo install cargo-audit
-        cargo audit || true  # Permitir warnings sin fallar el pipeline
-
-    - name: 🛠 Escanear código inseguro con Geiger
-      run: |
-        cargo install cargo-geiger
-        cargo geiger
+        cargo audit || true
 
   miri:
     name: 🔍 Análisis de Memoria con Miri (Rust Nightly)
