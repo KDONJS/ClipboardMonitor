@@ -1,14 +1,14 @@
-use std::sync::{Arc, Mutex};
-use std::{fs, thread, env};
-use std::time::Duration;
-use std::fs::File;
-use std::io::{Cursor, Write, Read};
 use arboard::Clipboard;
 use daemonize::Daemonize;
 use eframe::{egui, NativeOptions};
 use egui::IconData;
 use image::io::Reader as ImageReader;
 use serde_json;
+use std::fs::File;
+use std::io::{Cursor, Read, Write};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use std::{env, fs, thread};
 
 /// Ruta donde se guarda el historial del portapapeles
 const HISTORY_FILE: &str = "/tmp/clipboard_history.json";
@@ -68,18 +68,22 @@ impl eframe::App for ClipboardApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("📋 Historial del Portapapeles");
             ui.separator();
-            
+
             egui::ScrollArea::vertical().show(ui, |ui| {
                 for text in history.iter() {
                     let truncated_text = ClipboardApp::truncate_text(text, 50);
-                    
+
                     ui.allocate_ui_with_layout(
                         egui::Vec2::new(ui.available_width(), 100.0),
                         egui::Layout::top_down(egui::Align::Center),
                         |ui| {
                             let response = ui.add_sized(
                                 [ui.available_width(), 80.0],
-                                egui::Button::new(egui::RichText::new(truncated_text.clone()).strong().size(14.0)),
+                                egui::Button::new(
+                                    egui::RichText::new(truncated_text.clone())
+                                        .strong()
+                                        .size(14.0),
+                                ),
                             );
                             if response.clicked() {
                                 let mut clipboard = Clipboard::new().unwrap();
@@ -90,7 +94,7 @@ impl eframe::App for ClipboardApp {
                     ui.separator();
                 }
             });
-            
+
             ui.label("Selecciona un texto para copiarlo");
         });
         ctx.request_repaint_after(Duration::from_secs(1)); // Redibuja la UI cada segundo
@@ -110,7 +114,11 @@ fn load_icon() -> Option<Arc<IconData>> {
     let (width, height) = image.dimensions();
     let rgba = image.into_raw();
 
-    Some(Arc::new(IconData { rgba, width, height }))
+    Some(Arc::new(IconData {
+        rgba,
+        width,
+        height,
+    }))
 }
 
 /// Ejecuta el proceso en segundo plano como un daemon y guarda datos en un archivo
@@ -167,8 +175,8 @@ fn main() -> Result<(), eframe::Error> {
     };
 
     eframe::run_native(
-        "📋 Clipboard Monitor", 
-        options, 
-        Box::new(|_cc| Box::new(ClipboardApp::new()))
+        "📋 Clipboard Monitor",
+        options,
+        Box::new(|_cc| Box::new(ClipboardApp::new())),
     )
 }
