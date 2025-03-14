@@ -6,7 +6,7 @@ Clipboard Monitor es una aplicación para Linux escrita en **Rust** que monitore
 
 ```mermaid
 graph TD;
-    subgraph Clipboard Monitor
+    subgraph ClipboardMonitor
         A[Inicio] -->|¿Modo Daemon?| B{Argumento --daemon}
         B -->|Sí| C[Ejecutar Daemon en Segundo Plano]
         B -->|No| D[Ejecutar Interfaz de Usuario (UI)]
