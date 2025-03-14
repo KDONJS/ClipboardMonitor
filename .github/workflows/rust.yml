@@ -77,30 +77,37 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Publish .deb package to GitHub Packages
+      - name: Authenticate with GitHub Container Registry
+        run: echo "${{ secrets.GH_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Publish .deb package to GitHub Container Registry
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           for file in artifacts/debian/*.deb; do
             package_name=$(dpkg-deb --showformat='${Package}' --show "$file")
             package_version=$(dpkg-deb --showformat='${Version}' --show "$file")
-            curl -X POST \
+            echo "Subiendo $file a ghcr.io/${{ github.repository }}/$package_name:$package_version"
+            
+            curl -X PUT \
               -H "Authorization: Bearer $GITHUB_TOKEN" \
-              -H "Content-Type: $(file -b --mime-type "$file")" \
+              -H "Content-Type: application/vnd.debian.binary-package" \
               --data-binary @"$file" \
-              "https://uploads.github.com/repos/${{ github.repository }}/packages/debian/$package_name/$package_version"
+              "https://ghcr.io/v2/${{ github.repository }}/$package_name/blobs/uploads/"
           done
 
-      - name: Publish .rpm package to GitHub Packages
+      - name: Publish .rpm package to GitHub Container Registry
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           for file in artifacts/generate-rpm/*.rpm; do
             package_name=$(rpm -qp --queryformat '%{NAME}' "$file")
             package_version=$(rpm -qp --queryformat '%{VERSION}-%{RELEASE}' "$file")
-            curl -X POST \
+            echo "Subiendo $file a ghcr.io/${{ github.repository }}/$package_name:$package_version"
+  
+            curl -X PUT \
               -H "Authorization: Bearer $GITHUB_TOKEN" \
               -H "Content-Type: application/x-rpm" \
               --data-binary @"$file" \
-              "https://uploads.github.com/repos/${{ github.repository }}/packages/rpm/$package_name/$package_version"
+              "https://ghcr.io/v2/${{ github.repository }}/$package_name/blobs/uploads/"
           done
