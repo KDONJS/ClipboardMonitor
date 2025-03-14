@@ -2,6 +2,47 @@
 
 Clipboard Monitor es una aplicación para Linux escrita en **Rust** que monitorea el contenido copiado al portapapeles, almacenando los últimos 10 elementos y permitiendo su reutilización a través de una interfaz gráfica.
 
+### 🔧 Arquitectura del Sistema
+
+```mermaid
+graph TD;
+    subgraph Clipboard Monitor
+        A[Inicio] -->|¿Modo Daemon?| B{Argumento --daemon}
+        B -->|Sí| C[Ejecutar Daemon en Segundo Plano]
+        B -->|No| D[Ejecutar Interfaz de Usuario (UI)]
+    end
+
+    subgraph Daemon
+        C --> E[Monitorear Portapapeles cada 1s]
+        E -->|Texto Copiado| F[Guardar en /tmp/clipboard_history.json]
+    end
+
+    subgraph UI
+        D --> G[Cargar historial desde /tmp/clipboard_history.json]
+        G --> H[Mostrar en Interfaz de Usuario]
+        H -->|Seleccionar Texto| I[Copiar al Portapapeles]
+    end
+
+    subgraph Sistema
+        J[Usuario Copia Texto] --> E
+        I --> J
+    end
+```
+
+### **📌 Explicación del Diagrama**
+- **Clipboard Monitor**:
+  - **Decide si ejecuta el Daemon o la UI** basado en los argumentos (`--daemon`).
+- **Daemon**:
+  - Se ejecuta en segundo plano y **monitorea el portapapeles cada segundo**.
+  - Guarda los textos copiados en **`/tmp/clipboard_history.json`**.
+- **UI**:
+  - **Carga el historial** desde el JSON.
+  - **Muestra los últimos 10 textos copiados** en la interfaz.
+  - Permite **seleccionar un texto** para copiarlo de nuevo al portapapeles.
+- **Sistema**:
+  - El usuario copia un texto, **el daemon lo captura** y lo guarda.
+  - Si el usuario **abre la UI**, se muestra el historial capturado.
+
 ## ✨ Características
 - Monitorea y almacena automáticamente los últimos 10 textos copiados.
 - Interfaz gráfica amigable con soporte de **scroll** para manejar múltiples elementos.
