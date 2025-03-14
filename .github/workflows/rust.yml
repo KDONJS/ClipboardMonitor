@@ -28,16 +28,15 @@ jobs:
       - name: Package Debian
         run: |
           mkdir -p artifacts/debian
-          # Suponiendo que usas cargo-deb para crear paquetes .deb
           cargo install cargo-deb
           cargo deb --output artifacts/debian/
 
       - name: Package RPM
         run: |
           mkdir -p artifacts/rpm
-          # Suponiendo que usas cargo-rpm para crear paquetes .rpm
-          cargo install cargo-rpm
-          cargo rpm build --output artifacts/rpm/
+          cargo install cargo-generate-rpm
+          cargo generate-rpm --release
+          cp target/release/rpmbuild/RPMS/*/*.rpm artifacts/rpm/
 
       - name: Upload built packages
         uses: actions/upload-artifact@v4
