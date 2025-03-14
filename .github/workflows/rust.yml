@@ -3,73 +3,77 @@ name: Build and Release Rust App
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y rpm
 
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
 
-      - name: Build
-        run: cargo build --release
+    - name: Build release
+      run: cargo build --release --verbose
 
-      - name: Package Debian
-        run: |
-          mkdir -p artifacts/debian
-          cargo install cargo-deb
-          cargo deb --output artifacts/debian/
+    - name: Generate .deb
+      run: |
+        cargo install cargo-deb
+        cargo deb
 
-      - name: Package RPM
-        run: |
-          mkdir -p artifacts/rpm
-          cargo install cargo-generate-rpm
-          cargo generate-rpm --release
-          cp target/release/rpmbuild/RPMS/*/*.rpm artifacts/rpm/
+    - name: Generate .rpm
+      run: |
+        cargo install cargo-generate-rpm
+        cargo generate-rpm
 
-      - name: Upload built packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: built-packages
-          path: artifacts/**/*
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: built-packages
+        path: |
+          target/debian/*.deb
+          target/generate-rpm/*.rpm
 
   release:
     needs: build
     runs-on: ubuntu-latest
-
+  
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-
+        uses: actions/checkout@v4
+  
       - name: Download built packages
         uses: actions/download-artifact@v4
         with:
           name: built-packages
           path: artifacts
-
-      - name: Validate downloaded artifacts
+  
+      - name: List contents of artifacts directory
+        run: ls -la artifacts/
+  
+      - name: Extract artifacts if compressed
         run: |
-          echo "Archivos descargados:"
-          ls -l artifacts/
-          if [ -z "$(ls -A artifacts/)" ]; then
-            echo "Error: No se encontraron artefactos descargados."
-            exit 1
+          if [ -f artifacts/built-packages.zip ]; then
+            unzip artifacts/built-packages.zip -d artifacts/
           fi
-
+  
+      - name: Verify files after extraction
+        run: ls -la artifacts/
+  
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**
+          files: artifacts/*
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
