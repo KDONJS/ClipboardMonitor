@@ -3,12 +3,11 @@ use daemonize::Daemonize;
 use eframe::{egui, NativeOptions};
 use egui::IconData;
 use image::io::Reader as ImageReader;
-use serde_json;
 use std::fs::File;
 use std::io::{Cursor, Read, Write};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use std::{env, fs, thread};
+use std::{env, thread};
 
 /// Ruta donde se guarda el historial del portapapeles
 const HISTORY_FILE: &str = "/tmp/clipboard_history.json";
